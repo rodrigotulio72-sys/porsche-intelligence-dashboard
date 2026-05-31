@@ -476,7 +476,7 @@ body {
 
 <div class="loading-screen" id="loadingScreen">
   <div class="loading-spinner"></div>
-  <div class="loading-text">Carregando dados da planilha expandida...</div>
+  <div class="loading-text" id="loadingText">Carregando dados da planilha expandida...</div>
   <div class="loading-progress" id="loadingProgress">0%</div>
 </div>
 
@@ -666,17 +666,39 @@ function findColumn(data, possibleNames) {
 // Carregar dados da planilha expandida do GitHub
 async function loadExpandedDataFromGitHub() {
   try {
-    document.getElementById('loadingScreen').classList.remove('hidden');
-    document.getElementById('loadingText').textContent = 'Conectando ao repositório...';
+    const loadingScreen = document.getElementById('loadingScreen');
+    const loadingText = document.getElementById('loadingText');
+    const loadingProgress = document.getElementById('loadingProgress');
     
-    // Usar a API do GitHub para obter o arquivo
-    const response = await fetch('https://github.com/rodrigotulio72-sys/porsche-intelligence-dashboard/raw/main/PLANILHA_PORSCHE_EXPANDIDA_3100.xlsx');
+    loadingScreen.classList.remove('hidden');
+    loadingText.textContent = 'Conectando ao repositório...';
+    loadingProgress.textContent = '10%';
+    
+    // Usar a API do GitHub com raw.githubusercontent.com (URL correta)
+    const fileName = 'PLANILHA_PORSCHE_EXPANDIDA_3100.xlsx';
+    const response = await fetch(`https://raw.githubusercontent.com/rodrigotulio72-sys/porsche-intelligence-dashboard/main/${fileName}`);
+    
+    if (!response.ok) {
+      throw new Error(`Erro HTTP: ${response.status} - Arquivo não encontrado no repositório`);
+    }
+    
+    loadingProgress.textContent = '40%';
+    
     const arrayBuffer = await response.arrayBuffer();
     
-    document.getElementById('loadingProgress').textContent = '50%';
+    if (arrayBuffer.byteLength === 0) {
+      throw new Error('Arquivo vazio recebido');
+    }
+    
+    loadingProgress.textContent = '60%';
     
     const data = new Uint8Array(arrayBuffer);
     const workbook = XLSX.read(data, {type: 'array'});
+    
+    if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+      throw new Error('Arquivo Excel sem planilhas válidas');
+    }
+    
     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
     const jsonData = XLSX.utils.sheet_to_json(firstSheet);
     
@@ -684,19 +706,22 @@ async function loadExpandedDataFromGitHub() {
       throw new Error('Planilha expandida vazia ou inválida');
     }
     
+    loadingProgress.textContent = '80%';
+    
     allData = jsonData;
     dataSource = 'expanded';
     
-    document.getElementById('loadingProgress').textContent = '75%';
     initializeDashboard();
     
-    document.getElementById('loadingScreen').classList.add('hidden');
+    loadingProgress.textContent = '100%';
+    loadingScreen.classList.add('hidden');
     showSuccess(`✓ Planilha Expandida carregada com ${allData.length} registros!`);
     
   } catch (error) {
     console.error('Erro ao carregar planilha expandida:', error);
-    document.getElementById('loadingScreen').classList.add('hidden');
-    showError('Erro ao carregar planilha expandida. Carregue manualmente: ' + error.message);
+    const loadingScreen = document.getElementById('loadingScreen');
+    loadingScreen.classList.add('hidden');
+    showError('⚠ Erro ao carregar arquivo automaticamente. Por favor, carregue manualmente: ' + error.message);
   }
 }
 
@@ -705,11 +730,19 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
   const file = e.target.files[0];
   if (!file) return;
   
-  document.getElementById('loadingScreen').classList.remove('hidden');
+  const loadingScreen = document.getElementById('loadingScreen');
+  const loadingText = document.getElementById('loadingText');
+  const loadingProgress = document.getElementById('loadingProgress');
+  
+  loadingScreen.classList.remove('hidden');
+  loadingText.textContent = 'Processando arquivo...';
+  loadingProgress.textContent = '0%';
   
   const reader = new FileReader();
   reader.onload = function(event) {
     try {
+      loadingProgress.textContent = '50%';
+      
       const data = new Uint8Array(event.target.result);
       const workbook = XLSX.read(data, {type: 'array'});
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -719,14 +752,18 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
         throw new Error('Planilha vazia ou inválida');
       }
       
+      loadingProgress.textContent = '75%';
+      
       allData = jsonData;
       dataSource = 'manual';
       initializeDashboard();
-      document.getElementById('loadingScreen').classList.add('hidden');
+      
+      loadingProgress.textContent = '100%';
+      loadingScreen.classList.add('hidden');
       showSuccess(`✓ Arquivo carregado com ${allData.length} registros!`);
       
     } catch (error) {
-      document.getElementById('loadingScreen').classList.add('hidden');
+      loadingScreen.classList.add('hidden');
       showError('Erro ao carregar arquivo: ' + error.message);
     }
   };
@@ -738,7 +775,7 @@ function showError(message) {
   const errorDiv = document.getElementById('errorMessage');
   errorDiv.textContent = message;
   errorDiv.classList.add('show');
-  setTimeout(() => errorDiv.classList.remove('show'), 5000);
+  setTimeout(() => errorDiv.classList.remove('show'), 6000);
 }
 
 // Função para mostrar sucesso
@@ -759,18 +796,18 @@ function initializeDashboard() {
   const quarterCol = findColumn(allData, columnMappings.quarter);
   
   if (!modelCol || !cityCol || !paymentCol || !priceCol || !quarterCol) {
-    showError('Colunas obrigatórias não encontradas. Esperado: Modelo, Cidade, Pagamento, Preço, Trimestre');
+    showError(`Colunas obrigatórias não encontradas. Encontradas: Model(${modelCol}), City(${cityCol}), Payment(${paymentCol}), Price(${priceCol}), Quarter(${quarterCol})`);
     return;
   }
   
   // Normalizar dados
   allData = allData.map(row => ({
-    model: row[modelCol],
-    city: row[cityCol],
-    payment: row[paymentCol],
+    model: String(row[modelCol] || '').trim(),
+    city: String(row[cityCol] || '').trim(),
+    payment: String(row[paymentCol] || '').trim(),
     price: parseFloat(row[priceCol]) || 0,
-    quarter: row[quarterCol]
-  })).filter(row => row.price > 0);
+    quarter: String(row[quarterCol] || '').trim()
+  })).filter(row => row.price > 0 && row.model && row.city && row.payment && row.quarter);
   
   // Atualizar info
   const infoDiv = document.getElementById('dataInfo');
