@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Porsche Intelligence Dashboard</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: linear-gradient(135deg, #0a0e27 0%, #1a0033 100%);
+  color: white;
+  font-family: 'Segoe UI', -apple-system, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Hero Section */
+.hero {
+  height: 280px;
+  padding: 50px 40px;
+  background: linear-gradient(135deg, rgba(0,0,0,0.5), rgba(214,176,122,0.1)), 
+              url('https://images.unsplash.com/photo-1503376780353-7e6692767b70') center/cover;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 3px solid #d6b07a;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 20% 50%, rgba(214,176,122,0.1) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.hero-content {
+  z-index: 1;
+  flex: 1;
+}
+
+.hero h1 {
+  font-size: 56px;
+  color: #d6b07a;
+  font-weight: 700;
+  margin-bottom: 10px;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+
+.hero p {
+  font-size: 16px;
+  color: #b0b0b0;
+  opacity: 0.9;
+}
+
+.hero-stats {
+  display: flex;
+  gap: 30px;
+  z-index: 1;
+}
+
+.hero-stat {
+  text-align: right;
+  min-width: 150px;
+}
+
+.hero-stat-value {
+  font-size: 24px;
+  color: #d6b07a;
+  font-weight: bold;
+}
+
+.hero-stat-label {
+  font-size: 12px;
+  color: #888;
+  text-transform: uppercase;
+  margin-top: 5px;
+}
+
+/* Controls Section */
+.controls {
+  background: #0f1529;
+  padding: 25px 40px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  border-bottom: 1px solid #333;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.control-group label {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #888;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.control-group select,
+.control-group input {
+  padding: 12px 15px;
+  background: #1a1f3a;
+  color: white;
+  border: 1px solid #333;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.control-group select:hover,
+.control-group input:hover {
+  border-color: #d6b07a;
+  background: #202540;
+}
+
+.control-group select:focus,
+.control-group input:focus {
+  outline: none;
+  border-color: #d6b07a;
+  box-shadow: 0 0 10px rgba(214,176,122,0.2);
+}
+
+.btn-reset {
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #d6b07a, #c99d68);
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  align-self: flex-end;
+  margin-top: 20px;
+}
+
+.btn-reset:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(214,176,122,0.3);
+}
+
+/* KPI Cards */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  padding: 30px 40px;
+  background: linear-gradient(to bottom, #0f1529, #0a0e27);
+}
+
+.card {
+  background: linear-gradient(135deg, #1a1f3a 0%, #0f1529 100%);
+  padding: 25px;
+  border-radius: 15px;
+  border: 1px solid #333;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #d6b07a, transparent);
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  border-color: #d6b07a;
+  box-shadow: 0 10px 30px rgba(214,176,122,0.15);
+}
+
+.card h3 {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #888;
+  margin-bottom: 15px;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+.card-value {
+  font-size: 28px;
+  color: #d6b07a;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.card-subtext {
+  font-size: 12px;
+  color: #666;
+}
+
+.card-icon {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  font-size: 24px;
+  opacity: 0.2;
+}
+
+/* Charts Section */
+.charts-container {
+  padding: 30px 40px;
+  background: #0a0e27;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: 30px;
+}
+
+.chart-wrapper {
+  background: linear-gradient(135deg, #1a1f3a 0%, #0f1529 100%);
+  border-radius: 15px;
+  border: 1px solid #333;
+  padding: 20px;
+  transition: all 0.3s ease;
+}
+
+.chart-wrapper:hover {
+  border-color: #d6b07a;
+  box-shadow: 0 10px 30px rgba(214,176,122,0.1);
+}
+
+.chart-wrapper h3 {
+  font-size: 14px;
+  text-transform: uppercase;
+  color: #d6b07a;
+  margin-bottom: 15px;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+.chart {
+  height: 400px;
+  width: 100%;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  padding: 30px 40px;
+  background: linear-gradient(to bottom, #0a0e27, #050811);
+}
+
+.stat-box {
+  background: linear-gradient(135deg, #1a1f3a 0%, #0f1529 100%);
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #333;
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #888;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  font-size: 24px;
+  color: #d6b07a;
+  font-weight: 700;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .charts-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .chart {
+    height: 350px;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero {
+    height: auto;
+    flex-direction: column;
+    padding: 30px 20px;
+  }
+  
+  .hero-stats {
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+    width: 100%;
+  }
+  
+  .hero-stat {
+    text-align: left;
+    min-width: auto;
+  }
+  
+  .controls {
+    padding: 15px 20px;
+    grid-template-columns: 1fr;
+  }
+  
+  .kpis {
+    padding: 20px;
+    grid-template-columns: 1fr;
+  }
+  
+  .charts-container {
+    padding: 20px;
+  }
+}
+
+/* Loading Animation */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.loading {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0e27;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #d6b07a;
+}
+
+/* Tooltip */
+.tooltip {
+  position: relative;
+  display: inline-block;
+  cursor: help;
+}
+
+.tooltip::after {
+  content: attr(data-tip);
+  visibility: hidden;
+  background-color: #d6b07a;
+  color: #000;
+  text-align: center;
+  padding: 8px 12px;
+  border-radius: 6px;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.tooltip:hover::after {
+  visibility: visible;
+  opacity: 1;
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-content">
+    <h1><i class="fas fa-crown"></i> Porsche Intelligence</h1>
+    <p>Dashboard analítico Porsche + Dados de Mercado</p>
+  </div>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="hero-stat-value" id="totalRevenue">$0</div>
+      <div class="hero-stat-label">Receita Total</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-value" id="totalSales">0</div>
+      <div class="hero-stat-label">Total de Vendas</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-value" id="avgPrice">$0</div>
+      <div class="hero-stat-label">Preço Médio</div>
+    </div>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="control-group">
+    <label><i class="fas fa-car"></i> Modelo</label>
+    <select id="model"></select>
+  </div>
+  <div class="control-group">
+    <label><i class="fas fa-map-marker"></i> Cidade</label>
+    <select id="city"></select>
+  </div>
+  <div class="control-group">
+    <label><i class="fas fa-credit-card"></i> Forma de Pagamento</label>
+    <select id="pay"></select>
+  </div>
+  <div class="control-group">
+    <label><i class="fas fa-calendar"></i> Trimestre</label>
+    <select id="quarter"></select>
+  </div>
+  <div class="control-group">
+    <label><i class="fas fa-dollar-sign"></i> Faixa de Preço</label>
+    <input type="range" id="priceRange" min="0" max="200000" step="1000" value="200000">
+    <div style="font-size: 12px; color: #888;">Até: $<span id="priceValue">200000</span></div>
+  </div>
+  <button class="btn-reset" onclick="resetFilters()"><i class="fas fa-redo"></i> Resetar</button>
+</div>
+
+<div class="kpis">
+  <div class="card">
+    <i class="fas fa-car card-icon"></i>
+    <h3>Modelo Mais Vendido</h3>
+    <div class="card-value" id="k1">-</div>
+    <div class="card-subtext" id="k1-sub"></div>
+  </div>
+  <div class="card">
+    <i class="fas fa-city card-icon"></i>
+    <h3>Cidade Líder</h3>
+    <div class="card-value" id="k2">-</div>
+    <div class="card-subtext" id="k2-sub"></div>
+  </div>
+  <div class="card">
+    <i class="fas fa-credit-card card-icon"></i>
+    <h3>Pagamento Preferido</h3>
+    <div class="card-value" id="k3">-</div>
+    <div class="card-subtext" id="k3-sub"></div>
+  </div>
+  <div class="card">
+    <i class="fas fa-chart-line card-icon"></i>
+    <h3>Trimestre Mais Forte</h3>
+    <div class="card-value" id="k4">-</div>
+    <div class="card-subtext" id="k4-sub"></div>
+  </div>
+  <div class="card">
+    <i class="fas fa-dollar-sign card-icon"></i>
+    <h3>Receita Filtrada</h3>
+    <div class="card-value" id="k5">$0</div>
+    <div class="card-subtext" id="k5-sub"></div>
+  </div>
+</div>
+
+<div class="charts-container">
+  <div class="chart-wrapper">
+    <h3><i class="fas fa-chart-bar"></i> Vendas por Trimestre</h3>
+    <div id="qchart" class="chart"></div>
+  </div>
+  
+  <div class="chart-wrapper">
+    <h3><i class="fas fa-chart-bar"></i> Vendas por Cidade</h3>
+    <div id="citychart" class="chart"></div>
+  </div>
+  
+  <div class="chart-wrapper">
+    <h3><i class="fas fa-chart-pie"></i> Métodos de Pagamento</h3>
+    <div id="paychart" class="chart"></div>
+  </div>
+  
+  <div class="chart-wrapper">
+    <h3><i class="fas fa-chart-pie"></i> Distribuição de Modelos</h3>
+    <div id="modelchart" class="chart"></div>
+  </div>
+
+  <div class="chart-wrapper full-width">
+    <h3><i class="fas fa-project-diagram"></i> Modelos Porsche (Mapa de Calor)</h3>
+    <div id="treemap" class="chart"></div>
+  </div>
+
+  <div class="chart-wrapper full-width">
+    <h3><i class="fas fa-line-chart"></i> Receita por Trimestre (Tendência)</h3>
+    <div id="revenuechart" class="chart"></div>
+  </div>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-box">
+    <div class="stat-label">Modelos Únicos</div>
+    <div class="stat-value" id="stat-models">0</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-label">Cidades Cobertas</div>
+    <div class="stat-value" id="stat-cities">0</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-label">Formas de Pagamento</div>
+    <div class="stat-value" id="stat-payments">0</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-label">Preço Máximo</div>
+    <div class="stat-value" id="stat-max">$0</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-label">Preço Mínimo</div>
+    <div class="stat-value" id="stat-min">$0</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-label">Dados Processados</div>
+    <div class="stat-value" id="stat-records">0</div>
+  </div>
+</div>
+
+<script>
+// Sample Data - Expandido
+const data = [
+  {"PorscheModelSanitized": "718 Cayman", "CitySanitized": "Boston", "PayMethodSanitized": "Credit Card", "SalesPriceSanitized": 79500.0, "Quarter": "2024-Q1"},
+  {"PorscheModelSanitized": "911 Carrera", "CitySanitized": "New York", "PayMethodSanitized": "Wire Transfer", "SalesPriceSanitized": 105000.0, "Quarter": "2024-Q1"},
+  {"PorscheModelSanitized": "Panamera", "CitySanitized": "Los Angeles", "PayMethodSanitized": "Financing", "SalesPriceSanitized": 92000.0, "Quarter": "2024-Q1"},
+  {"PorscheModelSanitized": "Cayenne", "CitySanitized": "Miami", "PayMethodSanitized": "Credit Card", "SalesPriceSanitized": 88000.0, "Quarter": "2024-Q2"},
+  {"PorscheModelSanitized": "911 Turbo", "CitySanitized": "San Francisco", "PayMethodSanitized": "Wire Transfer", "SalesPriceSanitized": 125000.0, "Quarter": "2024-Q2"},
+  {"PorscheModelSanitized": "Macan", "CitySanitized": "Chicago", "PayMethodSanitized": "Financing", "SalesPriceSanitized": 72000.0, "Quarter": "2024-Q2"},
+  {"PorscheModelSanitized": "718 Boxster", "CitySanitized": "Boston", "PayMethodSanitized": "Credit Card", "SalesPriceSanitized": 75000.0, "Quarter": "2024-Q3"},
+  {"PorscheModelSanitized": "911 GT3", "CitySanitized": "Miami", "PayMethodSanitized": "Wire Transfer", "SalesPriceSanitized": 135000.0, "Quarter": "2024-Q3"},
+  {"PorscheModelSanitized": "Panamera Turbo", "CitySanitized": "New York", "PayMethodSanitized": "Financing", "SalesPriceSanitized": 98000.0, "Quarter": "2024-Q3"},
+  {"PorscheModelSanitized": "Cayenne Coupe", "CitySanitized": "Los Angeles", "PayMethodSanitized": "Credit Card", "SalesPriceSanitized": 95000.0, "Quarter": "2024-Q3"},
+  {"PorscheModelSanitized": "911 Carrera", "CitySanitized": "San Francisco", "PayMethodSanitized": "Wire Transfer", "SalesPriceSanitized": 108000.0, "Quarter": "2024-Q4"},
+  {"PorscheModelSanitized": "Macan S", "CitySanitized": "Chicago", "PayMethodSanitized": "Financing", "SalesPriceSanitized": 76000.0, "Quarter": "2024-Q4"},
+  {"PorscheModelSanitized": "718 Cayman", "CitySanitized": "Boston", "PayMethodSanitized": "Credit Card", "SalesPriceSanitized": 79500.0, "Quarter": "2024-Q4"},
+  {"PorscheModelSanitized": "Panamera", "CitySanitized": "Miami", "PayMethodSanitized": "Wire Transfer", "SalesPriceSanitized": 91000.0, "Quarter": "2024-Q4"},
+  {"PorscheModelSanitized": "Cayenne", "CitySanitized": "New York", "PayMethodSanitized": "Financing", "SalesPriceSanitized": 89000.0, "Quarter": "2024-Q1"},
+  {"PorscheModelSanitized": "911 Targa", "CitySanitized": "Los Angeles", "PayMethodSanitized": "Credit Card", "SalesPriceSanitized": 112000.0, "Quarter": "2024-Q1"},
+  {"PorscheModelSanitized": "Macan Electric", "CitySanitized": "San Francisco", "PayMethodSanitized": "Wire Transfer", "SalesPriceSanitized": 80000.0, "Quarter": "2024-Q2"},
+  {"PorscheModelSanitized": "718 Boxster", "CitySanitized": "Chicago", "PayMethodSanitized": "Financing", "SalesPriceSanitized": 74000.0, "Quarter": "2024-Q2"},
+  {"PorscheModelSanitized": "911 GTS", "CitySanitized": "Boston", "PayMethodSanitized": "Credit Card", "SalesPriceSanitized": 118000.0, "Quarter": "2024-Q3"},
+  {"PorscheModelSanitized": "Panamera Hybrid", "CitySanitized": "Miami", "PayMethodSanitized": "Wire Transfer", "SalesPriceSanitized": 93000.0, "Quarter": "2024-Q3"}
+];
+
+let filteredData = [...data];
+
+// Função para preencher dropdowns
+function fill(id, key) {
+  let s = document.getElementById(id);
+  s.innerHTML = '<option value="">Todos</option>';
+  [...new Set(data.map(x => x[key]))].sort().forEach(v => 
+    s.innerHTML += `<option value="${v}">${v}</option>`
+  );
+  s.onchange = render;
+}
+
+// Inicializar dropdowns
+fill('model', 'PorscheModelSanitized');
+fill('city', 'CitySanitized');
+fill('pay', 'PayMethodSanitized');
+fill('quarter', 'Quarter');
+
+// Range de preço
+document.getElementById('priceRange').oninput = function() {
+  document.getElementById('priceValue').innerHTML = parseInt(this.value).toLocaleString();
+  render();
+};
+
+// Função de renderização principal
+function render() {
+  filteredData = [...data];
+  
+  // Aplicar filtros
+  if(model.value) filteredData = filteredData.filter(x => x['PorscheModelSanitized'] == model.value);
+  if(city.value) filteredData = filteredData.filter(x => x['CitySanitized'] == city.value);
+  if(pay.value) filteredData = filteredData.filter(x => x['PayMethodSanitized'] == pay.value);
+  if(quarter.value) filteredData = filteredData.filter(x => x['Quarter'] == quarter.value);
+  
+  const maxPrice = parseInt(document.getElementById('priceRange').value);
+  filteredData = filteredData.filter(x => parseFloat(x['SalesPriceSanitized']) <= maxPrice);
+  
+  // Calcular métricas
+  const rev = filteredData.reduce((a, b) => a + (parseFloat(b['SalesPriceSanitized']) || 0), 0);
+  const avgPrice = filteredData.length ? rev / filteredData.length : 0;
+  
+  // KPIs
+  const mc = {}, cc = {}, pc = {}, qc = {}, qcrev = {};
+  
+  filteredData.forEach(r => {
+    const model = r['PorscheModelSanitized'];
+    const city = r['CitySanitized'];
+    const pay = r['PayMethodSanitized'];
+    const quarter = r['Quarter'];
+    const price = parseFloat(r['SalesPriceSanitized']) || 0;
+    
+    mc[model] = (mc[model] || 0) + 1;
+    cc[city] = (cc[city] || 0) + 1;
+    pc[pay] = (pc[pay] || 0) + 1;
+    qc[quarter] = (qc[quarter] || 0) + 1;
+    qcrev[quarter] = (qcrev[quarter] || 0) + price;
+  });
+  
+  // Atualizar KPIs
+  const topModel = Object.entries(mc).sort((a,b) => b[1]-a[1])[0];
+  const topCity = Object.entries(cc).sort((a,b) => b[1]-a[1])[0];
+  const topPay = Object.entries(pc).sort((a,b) => b[1]-a[1])[0];
+  const topQuarter = Object.entries(qc).sort((a,b) => b[1]-a[1])[0];
+  
+  k1.innerHTML = topModel?.[0] || '-';
+  k1_sub.innerHTML = topModel ? `${topModel[1]} unidades` : '';
+  k2.innerHTML = topCity?.[0] || '-';
+  k2_sub.innerHTML = topCity ? `${topCity[1]} vendas` : '';
+  k3.innerHTML = topPay?.[0] || '-';
+  k3_sub.innerHTML = topPay ? `${topPay[1]} transações` : '';
+  k4.innerHTML = topQuarter?.[0] || '-';
+  k4_sub.innerHTML = topQuarter ? `${topQuarter[1]} unidades` : '';
+  k5.innerHTML = '$' + rev.toLocaleString('pt-BR', {maximumFractionDigits: 0});
+  k5_sub.innerHTML = filteredData.length + ' vendas';
+  
+  // Hero Stats
+  document.getElementById('totalRevenue').innerHTML = '$' + data.reduce((a, b) => a + (parseFloat(b['SalesPriceSanitized']) || 0), 0).toLocaleString('pt-BR', {maximumFractionDigits: 0});
+  document.getElementById('totalSales').innerHTML = data.length;
+  document.getElementById('avgPrice').innerHTML = '$' + (data.length ? (data.reduce((a, b) => a + (parseFloat(b['SalesPriceSanitized']) || 0), 0) / data.length).toLocaleString('pt-BR', {maximumFractionDigits: 0}) : 0);
+  
+  // Stats Grid
+  document.getElementById('stat-models').innerHTML = [...new Set(data.map(x => x['PorscheModelSanitized']))].length;
+  document.getElementById('stat-cities').innerHTML = [...new Set(data.map(x => x['CitySanitized']))].length;
+  document.getElementById('stat-payments').innerHTML = [...new Set(data.map(x => x['PayMethodSanitized']))].length;
+  document.getElementById('stat-max').innerHTML = '$' + Math.max(...data.map(x => parseFloat(x['SalesPriceSanitized']))).toLocaleString('pt-BR', {maximumFractionDigits: 0});
+  document.getElementById('stat-min').innerHTML = '$' + Math.min(...data.map(x => parseFloat(x['SalesPriceSanitized']))).toLocaleString('pt-BR', {maximumFractionDigits: 0});
+  document.getElementById('stat-records').innerHTML = filteredData.length;
+  
+  // Chart styling
+  const chartStyle = {
+    paper_bgcolor: '#1a1f3a',
+    plot_bgcolor: '#0f1529',
+    font: { color: '#fff', family: 'Segoe UI' },
+    margin: { l: 60, r: 40, t: 40, b: 60 },
+    hovermode: 'closest'
+  };
+  
+  // Gráfico de Trimestres
+  Plotly.newPlot('qchart', [
+    {
+      x: Object.keys(qc).sort(),
+      y: Object.keys(qc).sort().map(k => qc[k]),
+      type: 'bar',
+      marker: { color: '#d6b07a', opacity: 0.8 },
+      hovertemplate: '<b>%{x}</b><br>Unidades: %{y}<extra></extra>'
+    }
+  ], { ...chartStyle, title: 'Unidades Vendidas por Trimestre' });
+  
+  // Gráfico de Cidades
+  Plotly.newPlot('citychart', [
+    {
+      x: Object.keys(cc).sort((a, b) => cc[b] - cc[a]),
+      y: Object.keys(cc).sort((a, b) => cc[b] - cc[a]).map(k => cc[k]),
+      type: 'bar',
+      marker: { color: '#b8860b', opacity: 0.8 },
+      hovertemplate: '<b>%{x}</b><br>Vendas: %{y}<extra></extra>'
+    }
+  ], { ...chartStyle, title: 'Vendas por Cidade' });
+  
+  // Gráfico de Pagamentos (Pizza)
+  Plotly.newPlot('paychart', [
+    {
+      labels: Object.keys(pc),
+      values: Object.values(pc),
+      type: 'pie',
+      marker: { colors: ['#d6b07a', '#c99d68', '#b8860b'] },
+      textposition: 'inside',
+      textinfo: 'label+percent',
+      hovertemplate: '<b>%{label}</b><br>Transações: %{value}<extra></extra>'
+    }
+  ], { ...chartStyle, title: 'Métodos de Pagamento' });
+  
+  // Gráfico de Modelos (Pizza)
+  const topModels = Object.entries(mc).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  Plotly.newPlot('modelchart', [
+    {
+      labels: topModels.map(x => x[0]),
+      values: topModels.map(x => x[1]),
+      type: 'pie',
+      marker: { 
+        colors: ['#d6b07a', '#c99d68', '#b8860b', '#a67c52', '#8b6f47', '#70563c', '#553d2d', '#3a281e']
+      },
+      textposition: 'inside',
+      textinfo: 'label+percent',
+      hovertemplate: '<b>%{label}</b><br>Unidades: %{value}<extra></extra>'
+    }
+  ], { ...chartStyle, title: 'Top 8 Modelos Porsche' });
+  
+  // Treemap
+  Plotly.newPlot('treemap', [
+    {
+      type: 'treemap',
+      labels: Object.keys(mc),
+      parents: Object.keys(mc).map(x => ''),
+      values: Object.values(mc),
+      marker: {
+        colorscale: [[0, '#0f1529'], [1, '#d6b07a']],
+        cmid: Math.max(...Object.values(mc)) / 2
+      },
+      textposition: 'middle center',
+      hovertemplate: '<b>%{label}</b><br>Unidades: %{value}<extra></extra>'
+    }
+  ], { ...chartStyle, title: 'Distribuição de Modelos' });
+  
+  // Receita por Trimestre
+  const sortedQuarters = Object.keys(qcrev).sort();
+  Plotly.newPlot('revenuechart', [
+    {
+      x: sortedQuarters,
+      y: sortedQuarters.map(k => qcrev[k]),
+      type: 'scatter',
+      mode: 'lines+markers',
+      line: { color: '#d6b07a', width: 3 },
+      marker: { size: 10, color: '#d6b07a', symbol: 'circle' },
+      fill: 'tozeroy',
+      fillcolor: 'rgba(214, 176, 122, 0.2)',
+      hovertemplate: '<b>%{x}</b><br>Receita: $%{y:,.0f}<extra></extra>'
+    }
+  ], { 
+    ...chartStyle, 
+    title: 'Tendência de Receita por Trimestre',
+    yaxis: { title: 'Receita ($)' }
+  });
+}
+
+// Resetar filtros
+function resetFilters() {
+  document.getElementById('model').value = '';
+  document.getElementById('city').value = '';
+  document.getElementById('pay').value = '';
+  document.getElementById('quarter').value = '';
+  document.getElementById('priceRange').value = '200000';
+  document.getElementById('priceValue').innerHTML = '200000';
+  render();
+}
+
+// Inicializar dashboard
+render();
+</script>
+</body>
+</html>
